@@ -138,12 +138,28 @@ class Environment(object):
         self.constraints = Constraints()
         self.constraint_dict = {}
 
+        self.update_max_time()
+
         self.a_star = AStar(self)
         self.obs_id_to_init_loc = {}
         if original_obs_pos:
             self.obs_id_to_init_loc = original_obs_pos
         else:
             self.obs_id_to_init_loc = {v: k for k, v in self.movable_obstacles_map.items()}
+    
+    def update_max_time(self):
+        m_time = 0
+        if self.moving_obstacles:
+            m_time = max([m_time] + [abs(t) for x, y, t in self.moving_obstacles.keys()])
+        if self.movable_obstacles_paths:
+            for path in self.movable_obstacles_paths.values():
+                if path:
+                    m_time = max(m_time, path[-1]['t'])
+        if self.constraints.vertex_constraints:
+            m_time = max([m_time] + [vc.time for vc in self.constraints.vertex_constraints])
+        if self.constraints.edge_constraints:
+            m_time = max([m_time] + [ec.time for ec in self.constraints.edge_constraints])
+        self.max_time = m_time
 
     def get_obstacle_at(self, location, delta_o, time=None):
         loc_tuple = location.to_tuple()
@@ -180,6 +196,8 @@ class Environment(object):
                         Location(state.location.x, state.location.y+1), 
                         Location(state.location.x, state.location.y-1)]
             for l_prime in candidates:
+                if l_prime.x == state.location.x and l_prime.y == state.location.y and state.time >= self.max_time:
+                    continue
                 if not ( 0 <= l_prime.x < self.dimension[0] and 0 <= l_prime.y < self.dimension[1]):
                     continue
                 if l_prime.to_tuple() in self.obstacles:
@@ -249,6 +267,8 @@ class Environment(object):
                             break
             moves = [(0, 1), (0, -1), (1, 0), (-1, 0), (0, 0)]
             for dx, dy in moves:
+                    if (dx, dy) == (0, 0) and state.time >= self.max_time:
+                        continue
                     l_obs_prime = (curr_obs_loc[0] + dx, curr_obs_loc[1] + dy)
                     if abs(l_obs_prime[0] -l_init[0]) + abs(l_obs_prime[1] - l_init[1]) > self.k:
                         continue
@@ -479,12 +499,14 @@ class Environment(object):
             self.agent_dict.update({agent['name']:{'start':start_state, 'goal':goal_state}})
     
     def calculate_g(self, state):
-        return state.time + (self.alpha * state.p) + (self.alpha * state.w)
+        epsilon = 0.00001
+        return state.time + (self.alpha * state.p) + (epsilon * state.w)
 
     def compute_solution(self):
         solution = {}
         for agent in self.agent_dict.keys():
             self.constraints = self.constraint_dict.setdefault(agent, Constraints())
+            self.update_max_time()
             local_solution = self.a_star.search(agent)
             if not local_solution:
                 return False
@@ -503,30 +525,67 @@ class Environment(object):
     def is_well_formed(self, delta_o_dict):
         if len(self.v_ep) <= 1:
             return True
-        current_obs = set(self.static_obstacles)
+            
+        import collections
+
+        current_obs_positions = {}
         for loc, obs_id in self.movable_obstacles_map.items():
-            current_obs.add(delta_o_dict.get(obs_id, loc))
-        ep_list = list(self.v_ep)
-        start_ep = ep_list[0]
-        visited = {start_ep}
-        reached_endpoints = {start_ep}
-        queue = [start_ep]
-        moves = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-        while queue:
-            curr = queue.pop(0)
-            for dx, dy in moves:
-                nxt = (curr[0] + dx, curr[1] + dy)
-                if not (0 <= nxt[0] < self.dimension[0] and 0 <= nxt[1] < self.dimension[1]):
-                    continue
-                if nxt in current_obs:
-                    continue
-                if nxt not in visited:
-                    visited.add(nxt)
-                    if nxt in self.v_ep:
-                        reached_endpoints.add(nxt)
-                    else:
-                        queue.append(nxt)
-        return len(reached_endpoints) == len(self.v_ep)
+            current_obs_positions[obs_id] = delta_o_dict.get(obs_id, loc)
+            
+        current_movable_set = set(current_obs_positions.values())
+        if current_movable_set & self.v_ep:
+            return False
+        base_blocked = self.static_obstacles | current_movable_set
+        
+        def check_connectivity(blocked_cells):
+            start_ep = next(iter(self.v_ep))
+            if start_ep in blocked_cells: return False
+            visited = {start_ep}
+            reached = {start_ep}
+            queue = collections.deque([start_ep])
+            moves = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+            if len(reached) == len(self.v_ep): return True
+            while queue:
+                curr = queue.popleft()
+                for dx, dy in moves:
+                    nxt = (curr[0] + dx, curr[1] + dy)
+                    if 0 <= nxt[0] < self.dimension[0] and 0 <= nxt[1] < self.dimension[1]:
+                        if nxt not in blocked_cells and nxt not in visited:
+                            visited.add(nxt)
+                            if nxt in self.v_ep:
+                                reached.add(nxt)
+                                if len(reached) == len(self.v_ep): return True
+                            else:
+                                queue.append(nxt)
+            return len(reached) == len(self.v_ep)
+
+        # 1. Controllo Rigoroso Classico (Tutti gli endpoint raggiungibili ADESSO)
+        if check_connectivity(base_blocked):
+            return True
+            
+        # 2. Controllo Multi-Ostacolo: La mappa STATICA di base è sana?
+        if not check_connectivity(self.static_obstacles):
+            return False
+            
+        # 3. Controllo Spazio di Manovra: Ogni ostacolo ha un parcheggio valido?
+        for obs_id, curr_pos in current_obs_positions.items():
+            init_pos = self.obs_id_to_init_loc[obs_id]
+            has_spot = False
+            for dx in range(-self.k, self.k + 1):
+                for dy in range(-(self.k - abs(dx)), self.k - abs(dx) + 1):
+                    v_park = (init_pos[0] + dx, init_pos[1] + dy)
+                    if v_park == curr_pos: continue
+                    if not (0 <= v_park[0] < self.dimension[0] and 0 <= v_park[1] < self.dimension[1]): continue
+                    if v_park in self.static_obstacles: continue
+                    if v_park in self.v_ep: continue
+                    has_spot = True
+                    break
+                if has_spot: break
+            # Se anche un solo ostacolo è murato vivo senza parcheggi, la mappa non è well-formed
+            if not has_spot:
+                return False
+                
+        return True
 
 class HighLevelNode(object):
     def __init__(self):

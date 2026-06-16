@@ -1,0 +1,181 @@
+agents:
+- goal:
+  - 0
+  - 1
+  name: agent0
+  start:
+  - 0
+  - 1
+- goal:
+  - 8
+  - 5
+  name: agent1
+  start:
+  - 8
+  - 5
+delays:
+  agent0: []
+  agent1: []
+map:
+  dimensions:
+  - 9
+  - 7
+  goal_locations:
+  - &id012
+    - 0
+    - 1
+  - &id005
+    - 0
+    - 3
+  - &id014
+    - 0
+    - 5
+  - &id003
+    - 8
+    - 1
+  - &id010
+    - 8
+    - 3
+  - &id008
+    - 8
+    - 5
+  - &id001
+    - 5
+    - 3
+  movable_obstacles:
+  - - 3
+    - 3
+  - - 4
+    - 3
+  non_task_endpoints:
+  - - 0
+    - 1
+  - - 0
+    - 3
+  - - 0
+    - 5
+  - - 8
+    - 1
+  - - 8
+    - 3
+  - - 8
+    - 5
+  obstacles:
+  - - 3
+    - 2
+  - - 4
+    - 2
+  - - 5
+    - 2
+  - - 3
+    - 4
+  - - 4
+    - 4
+  - - 5
+    - 4
+  start_locations:
+  - &id013
+    - 0
+    - 1
+  - &id011
+    - 0
+    - 3
+  - &id007
+    - 0
+    - 5
+  - &id004
+    - 8
+    - 1
+  - &id002
+    - 8
+    - 3
+  - &id009
+    - 8
+    - 5
+  - &id006
+    - 5
+    - 3
+n_delays_per_agent: 0
+n_tasks: 20
+task_freq: 1
+tasks:
+- goal: *id001
+  start: *id002
+  start_time: 0
+  task_name: task0
+- goal: *id003
+  start: *id004
+  start_time: 3
+  task_name: task1
+- goal: *id005
+  start: *id002
+  start_time: 3
+  task_name: task2
+- goal: *id003
+  start: *id002
+  start_time: 4
+  task_name: task3
+- goal: *id005
+  start: *id006
+  start_time: 5
+  task_name: task4
+- goal: *id005
+  start: *id007
+  start_time: 5
+  task_name: task5
+- goal: *id008
+  start: *id006
+  start_time: 5
+  task_name: task6
+- goal: *id003
+  start: *id002
+  start_time: 6
+  task_name: task7
+- goal: *id008
+  start: *id009
+  start_time: 9
+  task_name: task8
+- goal: *id010
+  start: *id011
+  start_time: 10
+  task_name: task9
+- goal: *id012
+  start: *id002
+  start_time: 10
+  task_name: task10
+- goal: *id005
+  start: *id011
+  start_time: 10
+  task_name: task11
+- goal: *id003
+  start: *id006
+  start_time: 11
+  task_name: task12
+- goal: *id001
+  start: *id002
+  start_time: 11
+  task_name: task13
+- goal: *id008
+  start: *id011
+  start_time: 12
+  task_name: task14
+- goal: *id008
+  start: *id013
+  start_time: 12
+  task_name: task15
+- goal: *id014
+  start: *id009
+  start_time: 12
+  task_name: task16
+- goal: *id001
+  start: *id002
+  start_time: 13
+  task_name: task17
+- goal: *id014
+  start: *id007
+  start_time: 13
+  task_name: task18
+- goal: *id014
+  start: *id002
+  start_time: 14
+  task_name: task19

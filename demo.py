@@ -8,9 +8,10 @@ from Simulation.tasks_and_delays_maker import *
 from Simulation.simulation_new_recovery import SimulationNewRecovery
 import subprocess
 import sys
+import random
 
 if __name__ == '__main__':
-    #random.seed(1234)
+    random.seed(17)
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', help='Robustness parameter for k-TP', default=None, type=int)
     parser.add_argument('-p', help='Robustness parameter for p-TP', default=None, type=float)
@@ -26,6 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('-radius', help="Terraforming radius (Radius k)", default=1, type=int)
     parser.add_argument('-alpha', help="Weight alpha", default=100, type=float)
     parser.add_argument('-laziness', help="Laziness of the radar (number of steps it can take in a single time step)", default=1, type=int)
+    parser.add_argument('-no_vis', help='Disable final visualization', action='store_true')
 
     args = parser.parse_args()
 
@@ -115,5 +117,6 @@ if __name__ == '__main__':
     with open(args.output, 'w') as output_yaml:
         yaml.safe_dump(output, output_yaml)
 
-    create = [sys.executable, '-m', 'Utils.Visualization.visualize', '-slow_factor', str(args.slow_factor)]
-    subprocess.call(create)
+    if not args.no_vis:
+        create = [sys.executable, '-m', 'Utils.Visualization.visualize', '-slow_factor', str(args.slow_factor)]
+        subprocess.call(create)
