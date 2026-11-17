@@ -138,7 +138,7 @@ class Animation:
             agent.set_facecolor(agent.original_face_color)
 
         # Make tasks visible at the right time
-        for t in map["tasks"]:
+        for t in self.map["tasks"]:
             if t['start_time'] <= i / self.slow_factor + 1 <= self.schedule['completed_tasks_times'][t['task_name']]:
                 self.tasks[t['task_name']][0].set_alpha(0.5)
                 self.tasks[t['task_name']][1].set_alpha(0.5)
@@ -209,5 +209,4 @@ if __name__ == "__main__":
         animation.save(args.video, args.speed)
     else:
         animation.show()
-
 

@@ -1,0 +1,435 @@
+{
+    "baselines": {
+        "LB": {
+            "makespan": 188.0,
+            "delivery_time": 16.075
+        },
+        "UB": {
+            "makespan": null,
+            "delivery_time": null
+        }
+    },
+    "gamma": 0,
+    "Alpha": {
+        "values": [
+            0.1,
+            0.5,
+            1.0
+        ],
+        "base_settings": {
+            "alpha": 0.1,
+            "radius": 3,
+            "laziness": 5
+        },
+        "avg_delivery_time": [
+            17.75,
+            17.775,
+            19.266666666666666
+        ],
+        "std_delivery_time": [
+            0.05000000000000071,
+            0.025000000000000355,
+            2.109633986158631
+        ],
+        "avg_makespan": [
+            181.5,
+            181.5,
+            184.0
+        ],
+        "std_makespan": [
+            17.5,
+            17.5,
+            14.719601443879744
+        ],
+        "avg_sim_time": [
+            10.136311650276184,
+            19.002256751060486,
+            15.429987271626791
+        ],
+        "std_sim_time": [
+            2.3710633516311646,
+            7.882571578025818,
+            4.3151541061401115
+        ],
+        "avg_terraforming_cost": [
+            2.2,
+            10.0,
+            18.0
+        ],
+        "std_terraforming_cost": [
+            0.0,
+            1.0,
+            3.265986323710904
+        ],
+        "raw_data": {
+            "0.1": {
+                "delivery_times": [
+                    17.7,
+                    17.8
+                ],
+                "makespans": [
+                    199,
+                    164
+                ],
+                "sim_times": [
+                    7.7652482986450195,
+                    12.507375001907349
+                ],
+                "terraforming_costs": [
+                    2.2,
+                    2.2
+                ],
+                "failed_runs": 8,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "0.5": {
+                "delivery_times": [
+                    17.75,
+                    17.8
+                ],
+                "makespans": [
+                    199,
+                    164
+                ],
+                "sim_times": [
+                    11.119685173034668,
+                    26.884828329086304
+                ],
+                "terraforming_costs": [
+                    9.0,
+                    11.0
+                ],
+                "failed_runs": 8,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "1.0": {
+                "delivery_times": [
+                    17.75,
+                    17.8,
+                    22.25
+                ],
+                "makespans": [
+                    199,
+                    164,
+                    189
+                ],
+                "sim_times": [
+                    10.088462114334106,
+                    20.656510829925537,
+                    15.544988870620728
+                ],
+                "terraforming_costs": [
+                    18.0,
+                    22.0,
+                    14.0
+                ],
+                "failed_runs": 7,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            }
+        }
+    },
+    "Radius": {
+        "values": [
+            3,
+            5,
+            7
+        ],
+        "base_settings": {
+            "alpha": 0.1,
+            "radius": 3,
+            "laziness": 5
+        },
+        "avg_delivery_time": [
+            17.75,
+            17.666666666666668,
+            17.666666666666668
+        ],
+        "std_delivery_time": [
+            0.05000000000000071,
+            0.12472191289246491,
+            0.12472191289246491
+        ],
+        "avg_makespan": [
+            181.5,
+            179.0,
+            179.0
+        ],
+        "std_makespan": [
+            17.5,
+            14.719601443879744,
+            14.719601443879744
+        ],
+        "avg_sim_time": [
+            15.812241792678833,
+            22.988808314005535,
+            18.1254399617513
+        ],
+        "std_sim_time": [
+            2.4481704235076904,
+            7.125586047678538,
+            9.471350763654582
+        ],
+        "avg_terraforming_cost": [
+            2.2,
+            2.466666666666667,
+            2.466666666666667
+        ],
+        "std_terraforming_cost": [
+            0.0,
+            0.3771236166328253,
+            0.3771236166328253
+        ],
+        "raw_data": {
+            "3": {
+                "delivery_times": [
+                    17.7,
+                    17.8
+                ],
+                "makespans": [
+                    199,
+                    164
+                ],
+                "sim_times": [
+                    13.364071369171143,
+                    18.260412216186523
+                ],
+                "terraforming_costs": [
+                    2.2,
+                    2.2
+                ],
+                "failed_runs": 8,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "5": {
+                "delivery_times": [
+                    17.5,
+                    17.7,
+                    17.8
+                ],
+                "makespans": [
+                    174,
+                    199,
+                    164
+                ],
+                "sim_times": [
+                    20.77579092979431,
+                    15.581335544586182,
+                    32.60929846763611
+                ],
+                "terraforming_costs": [
+                    3.0,
+                    2.2,
+                    2.2
+                ],
+                "failed_runs": 7,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "7": {
+                "delivery_times": [
+                    17.5,
+                    17.7,
+                    17.8
+                ],
+                "makespans": [
+                    174,
+                    199,
+                    164
+                ],
+                "sim_times": [
+                    10.82403039932251,
+                    12.051084756851196,
+                    31.5012047290802
+                ],
+                "terraforming_costs": [
+                    3.0,
+                    2.2,
+                    2.2
+                ],
+                "failed_runs": 7,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            }
+        }
+    },
+    "Laziness": {
+        "values": [
+            1,
+            2,
+            5
+        ],
+        "base_settings": {
+            "alpha": 0.1,
+            "radius": 3,
+            "laziness": 5
+        },
+        "avg_delivery_time": [
+            NaN,
+            19.775,
+            17.75
+        ],
+        "std_delivery_time": [
+            NaN,
+            2.424999999999999,
+            0.05000000000000071
+        ],
+        "avg_makespan": [
+            NaN,
+            202.5,
+            181.5
+        ],
+        "std_makespan": [
+            NaN,
+            0.5,
+            17.5
+        ],
+        "avg_sim_time": [
+            NaN,
+            8.823455691337585,
+            20.582489609718323
+        ],
+        "std_sim_time": [
+            NaN,
+            1.3115259408950806,
+            9.77494466304779
+        ],
+        "avg_terraforming_cost": [
+            NaN,
+            1.7000000000000002,
+            2.2
+        ],
+        "std_terraforming_cost": [
+            NaN,
+            0.09999999999999998,
+            0.0
+        ],
+        "raw_data": {
+            "1": {
+                "delivery_times": [],
+                "makespans": [],
+                "sim_times": [],
+                "terraforming_costs": [],
+                "failed_runs": 10,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 2: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 7: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "2": {
+                "delivery_times": [
+                    17.35,
+                    22.2
+                ],
+                "makespans": [
+                    202,
+                    203
+                ],
+                "sim_times": [
+                    7.511929750442505,
+                    10.134981632232666
+                ],
+                "terraforming_costs": [
+                    1.8,
+                    1.6
+                ],
+                "failed_runs": 8,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 7: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "5": {
+                "delivery_times": [
+                    17.7,
+                    17.8
+                ],
+                "makespans": [
+                    199,
+                    164
+                ],
+                "sim_times": [
+                    10.807544946670532,
+                    30.357434272766113
+                ],
+                "terraforming_costs": [
+                    2.2,
+                    2.2
+                ],
+                "failed_runs": 8,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            }
+        }
+    }
+}

@@ -29,17 +29,36 @@ class AStar:
         return total_path[::-1]
 
     def search(self, agent_name):
-        detour_path = self._run_search(agent_name, allow_terraforming=False, upper_bound=float('inf'))
-        
-        if detour_path:
-            upper_bound = self.env.calculate_g(detour_path[-1])
+        can_prune_by_cost = self.env.alpha >= 0 and (
+            self.env.gamma == 0
+            or (
+                self.env.gamma > 0
+                and all(value >= 0 for value in self.env.cell_values.values())
+            )
+        )
+
+        if can_prune_by_cost:
+            detour_path = self._run_search(
+                agent_name, allow_terraforming=False,
+                upper_bound=float('inf'), can_prune_by_cost=True,
+            )
+            if detour_path:
+                upper_bound = self.env.calculate_g(detour_path[-1])
+            else:
+                upper_bound = float('inf')
         else:
             upper_bound = float('inf')
 
-        self.iter = 0 
-        return self._run_search(agent_name, allow_terraforming=True, upper_bound=upper_bound)
+        self.iter = 0
+        return self._run_search(
+            agent_name, allow_terraforming=True, upper_bound=upper_bound,
+            can_prune_by_cost=can_prune_by_cost,
+        )
 
-    def _run_search(self, agent_name, allow_terraforming=True, upper_bound=float('inf')):
+    def _run_search(
+        self, agent_name, allow_terraforming=True, upper_bound=float('inf'),
+        can_prune_by_cost=False,
+    ):
         initial_state = self.agent_dict[agent_name]["start"]
         step_cost = 1
         closed_set = defaultdict(list)
@@ -48,7 +67,7 @@ class AStar:
         g_score = {}
         bonus_score = {}
         w_score = {}  # NUOVO: tracciamo il w
-        g_score[initial_state] = self.env.calculate_g(initial_state)    
+        g_score[initial_state] = self.env.calculate_g(initial_state)
         bonus_score[initial_state] = 0.0
         w_score[initial_state] = initial_state.w
         h_score = self.admissible_heuristic(initial_state, agent_name)
@@ -58,19 +77,28 @@ class AStar:
         # NUOVO: Aggiungiamo initial_state.w come 3° elemento della tupla
         heapq.heappush(heap, (g_score[initial_state] + h_score, 0, initial_state.w, h_score, next(index), initial_state))
 
-        while heap and (self.max_iter == -1 or self.iter < self.max_iter):
+        best_goal_cost = None
+        best_goal_score = float('inf')
+        best_goal_path = False
+
+        while heap:
+            if self.max_iter != -1 and self.iter >= self.max_iter:
+                print('Low level A* - Maximum iteration reached')
+                return best_goal_path
+
             self.iter = self.iter + 1
             
             # NUOVO: Aggiunto un '_' per spacchettare correttamente la tupla a 6 elementi
             current_f, _, _, _, _, current = heapq.heappop(heap)
             
-            # NUOVO: f è già pura! Non serve sottrarre nulla.
-            physical_f = current_f - (self.env.alpha * current.w)
+            current_search_g = self.env.calculate_g(current)
 
-            if physical_f > upper_bound:
-                continue
+            if can_prune_by_cost:
+                if current_f > upper_bound:
+                    break
+                if best_goal_cost is not None and current_f > best_goal_cost:
+                    break
                         
-            current_g = self.env.calculate_g(current)
             # base_key = (current.location.to_tuple(), current.time, current.to_move)
             # is_dominated = False
             # for (c_delta_o, c_p, c_g, c_bonus) in closed_set[base_key]:
@@ -88,11 +116,11 @@ class AStar:
             for (c_delta_o, c_p, c_g, c_bonus) in closed_set[base_key]:
                
                 if c_delta_o == current.delta_o and c_p <= current.p:
-                    if c_g < current_g:
+                    if c_g < current_search_g:
                         
                         is_dominated = True
                         break
-                    elif c_g == current_g and c_bonus >= current.lookahead_bonus:
+                    elif c_g == current_search_g and c_bonus >= current.lookahead_bonus:
                         
                         is_dominated = True
                         break
@@ -100,10 +128,17 @@ class AStar:
             if is_dominated:
                 continue
                 
-            closed_set[base_key].append((current.delta_o, current.p, current_g, current.lookahead_bonus))
+            closed_set[base_key].append((current.delta_o, current.p, current_search_g, current.lookahead_bonus))
             
             if self.is_at_goal(current, agent_name):
-                return self.reconstruct_path(came_from, current)
+                goal_score = self.env.obstacle_location_score(current)
+                goal_cost = current_search_g
+                if best_goal_cost is None or goal_cost < best_goal_cost or \
+                   (goal_cost == best_goal_cost and goal_score < best_goal_score):
+                    best_goal_cost = goal_cost
+                    best_goal_score = goal_score
+                    best_goal_path = self.reconstruct_path(came_from, current)
+                continue
                 
             for neighbor in self.get_neighbors(current, allow_terraforming=allow_terraforming, agent_name=agent_name):
                 tentative_g_score = self.env.calculate_g(neighbor)
@@ -128,5 +163,4 @@ class AStar:
                     
                     # NUOVO: neighbor.w inserito come terzo criterio (dopo il bonus, prima di h)
                     heapq.heappush(heap, (f_score, -neighbor.lookahead_bonus, neighbor.w, base_h, next(index), neighbor))
-                print('Low level A* - Maximum iteration reached')
-        return False
+        return best_goal_path

@@ -7,6 +7,7 @@ import sys
 sys.path.insert(0, '../')
 import argparse
 import yaml
+import random
 from math import fabs
 from itertools import combinations
 from copy import deepcopy
@@ -27,12 +28,13 @@ class Location(object):
         return (self.x, self.y)
 
 class State(object):
-    def __init__(self, time, location, delta_o=None, p=0.0, to_move=None, lookahead_bonus=0.0, w=0.0):
+    def __init__(self, time, location, delta_o=None, p=0.0, to_move=None, lookahead_bonus=0.0, w=0.0, cell_value_cost=0.0):
         self.time = time
         self.location = location
         self.delta_o = delta_o if delta_o is not None else frozenset()
         self.p = p
         self.w = w
+        self.cell_value_cost = cell_value_cost
         self.to_move = to_move if to_move is not None else ()
         self.lookahead_bonus = lookahead_bonus
     def __eq__(self, other):
@@ -107,11 +109,17 @@ class Constraints(object):
             "EC: " + str([str(ec) for ec in self.edge_constraints])
 
 class Environment(object):
-    def __init__(self, dimension, agents, obstacles, moving_obstacles=None, movable_obstacles=None, original_obs_pos=None, v_ep=None, a_star_max_iter=-1, alpha=100, terraforming_radius=3, static_obstacles=None, laziness=5):
+    def __init__(self, dimension, agents, obstacles, moving_obstacles=None, movable_obstacles=None, original_obs_pos=None, v_ep=None, a_star_max_iter=-1, alpha=100, terraforming_radius=3, static_obstacles=None, laziness=5, cell_values=None, goal_must_remain_safe=False, gamma=0.0, well_formed_radius=None):
         if moving_obstacles is None:
             moving_obstacles = []
         self.laziness = laziness
+        self.goal_must_remain_safe = goal_must_remain_safe
         self.dimension = dimension
+        self.cell_values = dict(cell_values) if cell_values is not None else {
+            (x, y): random.randint(1, 10)
+            for x in range(dimension[0])
+            for y in range(dimension[1])
+        }
         self.obstacles = obstacles
         self.static_obstacles = static_obstacles if static_obstacles is not None else obstacles
         self.moving_obstacles = moving_obstacles
@@ -129,7 +137,11 @@ class Environment(object):
         self.v_ep = set(tuple(e) for e in v_ep) if v_ep else set()
         self.a_star_max_iter = a_star_max_iter
         self.alpha = alpha
+        self.gamma = gamma
         self.k = terraforming_radius
+        self.well_formed_radius = (
+            terraforming_radius if well_formed_radius is None else well_formed_radius
+        )
         self.agents = agents
         self.agent_dict = {}
 
@@ -217,7 +229,7 @@ class Environment(object):
                     continue
                 obs_id = self.get_obstacle_at(l_prime, state.delta_o, time=state.time + 1)
                 if obs_id is None:
-                    new_state = State(time=state.time+1, location=l_prime, delta_o=state.delta_o, p=state.p, lookahead_bonus=state.lookahead_bonus, w=state.w)
+                    new_state = State(time=state.time+1, location=l_prime, delta_o=state.delta_o, p=state.p, lookahead_bonus=state.lookahead_bonus, w=state.w, cell_value_cost=state.cell_value_cost)
                     neighbors.append(new_state)
                     
                     if allow_terraforming and self.laziness > 1 and agent_name is not None:
@@ -244,11 +256,11 @@ class Environment(object):
                             if remote_obs_id is not None:
                                 dist_to_obs = abs(cursor[0] - state.location.x) + abs(cursor[1] - state.location.y)
                                 if dist_to_obs > 1:
-                                    early_state = State(time=state.time, location=state.location, delta_o=state.delta_o, p=state.p, to_move=((remote_obs_id, l_prime.to_tuple()),), lookahead_bonus=state.lookahead_bonus + 1, w=state.w)
+                                    early_state = State(time=state.time, location=state.location, delta_o=state.delta_o, p=state.p, to_move=((remote_obs_id, l_prime.to_tuple()),), lookahead_bonus=state.lookahead_bonus + 1, w=state.w, cell_value_cost=state.cell_value_cost)
                                     neighbors.append(early_state)
                                 break
                 elif allow_terraforming:
-                    new_state = State(time=state.time, location=state.location, delta_o=state.delta_o, p=state.p, to_move=((obs_id, l_prime.to_tuple()),), lookahead_bonus=state.lookahead_bonus, w=state.w)
+                    new_state = State(time=state.time, location=state.location, delta_o=state.delta_o, p=state.p, to_move=((obs_id, l_prime.to_tuple()),), lookahead_bonus=state.lookahead_bonus, w=state.w, cell_value_cost=state.cell_value_cost)
                     neighbors.append(new_state)
         else:
             (obs_id, target_agent), *rest_to_move = state.to_move
@@ -295,9 +307,11 @@ class Environment(object):
                         if (dx, dy) == (0, 0):
                             new_p = state.p
                             new_w = state.w + 1
+                            new_cell_value_cost = state.cell_value_cost
                         else:
                             new_p = state.p + 1
                             new_w = state.w
+                            new_cell_value_cost = state.cell_value_cost + self.cell_values[l_obs_prime]
                         # if (dx, dy) != (0, 0):
                         #     if not self.is_well_formed(new_delta):
                         #         continue
@@ -305,17 +319,17 @@ class Environment(object):
                         new_delta_fs = frozenset(new_delta.items())
                         if not rest_to_move:
                             if l_obs_prime != target_agent:
-                                new_state = State(time=state.time + 1, location=Location(target_agent[0], target_agent[1]), delta_o=new_delta_fs, p=new_p, to_move=(), lookahead_bonus=state.lookahead_bonus, w=new_w)
+                                new_state = State(time=state.time + 1, location=Location(target_agent[0], target_agent[1]), delta_o=new_delta_fs, p=new_p, to_move=(), lookahead_bonus=state.lookahead_bonus, w=new_w, cell_value_cost=new_cell_value_cost)
                             else:
-                                new_state = State(time=state.time + 1, location=state.location, delta_o=new_delta_fs, p=new_p, to_move=(), lookahead_bonus=state.lookahead_bonus, w=new_w)
+                                new_state = State(time=state.time + 1, location=state.location, delta_o=new_delta_fs, p=new_p, to_move=(), lookahead_bonus=state.lookahead_bonus, w=new_w, cell_value_cost=new_cell_value_cost)
                         else:
-                            new_state = State(time=state.time, location=state.location, delta_o=new_delta_fs, p=new_p, to_move=tuple(rest_to_move), lookahead_bonus=state.lookahead_bonus, w=new_w)
+                            new_state = State(time=state.time, location=state.location, delta_o=new_delta_fs, p=new_p, to_move=tuple(rest_to_move), lookahead_bonus=state.lookahead_bonus, w=new_w, cell_value_cost=new_cell_value_cost)
                         neighbors.append(new_state)
                     else:
                         if any(blocking_obs_id == item[0] for item in state.to_move) or blocking_obs_id == obs_id:
                             continue
                         new_to_move = ((blocking_obs_id, l_obs_prime), (obs_id, target_agent)) + tuple(rest_to_move)
-                        new_state = State(time=state.time, location=state.location, delta_o=state.delta_o, p=state.p, to_move=new_to_move, lookahead_bonus=state.lookahead_bonus, w=state.w)
+                        new_state = State(time=state.time, location=state.location, delta_o=state.delta_o, p=state.p, to_move=new_to_move, lookahead_bonus=state.lookahead_bonus, w=state.w, cell_value_cost=state.cell_value_cost)
                         neighbors.append(new_state)
         valid_neighbors = []
         for n in neighbors:
@@ -381,7 +395,6 @@ class Environment(object):
         elif conflict.type == Conflict.EDGE:
             constraint1 = Constraints()
             constraint2 = Constraints()
-
             e_constraint1 = EdgeConstraint(conflict.time, conflict.location_1, conflict.location_2)
             e_constraint2 = EdgeConstraint(conflict.time, conflict.location_2, conflict.location_1)
 
@@ -441,6 +454,21 @@ class Environment(object):
         return True
 
     def transition_valid(self, state_1, state_2):
+        destination = (
+            state_2.location.x,
+            state_2.location.y,
+            state_2.time,
+        )
+        if destination in self.moving_obstacles:
+            return False
+        for (x, y, obstacle_time) in self.moving_obstacles:
+            if (
+                obstacle_time < 0
+                and (x, y) == state_2.location.to_tuple()
+                and state_2.time >= abs(obstacle_time)
+            ):
+                return False
+
         tup_1 = (state_1.location.x, state_1.location.y, state_2.time)
         tup_2 = (state_2.location.x, state_2.location.y, state_1.time)
         if tup_1 in self.moving_obstacles and tup_2 in self.moving_obstacles and \
@@ -488,8 +516,30 @@ class Environment(object):
                 self.wf_cache = {}
             if state.delta_o not in self.wf_cache:
                 self.wf_cache[state.delta_o] = self.is_well_formed(dict(state.delta_o))
-            return self.wf_cache[state.delta_o]
+            if not self.wf_cache[state.delta_o]:
+                return False
+            if self.goal_must_remain_safe and not self.goal_is_safe_to_hold(state):
+                return False
+            return True
         return False
+
+    def goal_is_safe_to_hold(self, state):
+        location = state.location.to_tuple()
+        final_time = max(state.time, self.max_time) + 1
+        for future_time in range(state.time, final_time + 1):
+            if self.get_obstacle_at(state.location, state.delta_o, time=future_time) is not None:
+                return False
+            for (x, y, obstacle_time), _ in self.moving_obstacles.items():
+                if (x, y) == location and (
+                    obstacle_time == future_time
+                    if obstacle_time >= 0
+                    else future_time >= abs(obstacle_time)
+                ):
+                    return False
+            if VertexConstraint(future_time, state.location) in self.constraints.vertex_constraints:
+                return False
+
+        return True
 
     def make_agent_dict(self):
         for agent in self.agents:
@@ -500,7 +550,19 @@ class Environment(object):
     
     def calculate_g(self, state):
         epsilon = 0.00001
-        return state.time + (self.alpha * state.p) + (epsilon * state.w)
+        return (
+            state.time
+            + (self.alpha * state.p)
+            + (epsilon * state.w)
+            + (self.gamma * state.cell_value_cost)
+        )
+
+    def obstacle_location_score(self, state):
+        current_positions = dict(state.delta_o)
+        return sum(
+            self.cell_values[current_positions.get(obs_id, initial_location)]
+            for initial_location, obs_id in self.movable_obstacles_map.items()
+        )
 
     def compute_solution(self):
         solution = {}
@@ -519,7 +581,7 @@ class Environment(object):
             if not path:
                 continue
             final_state = path[-1]
-            total_cost += final_state.time + (self.alpha * final_state.p)
+            total_cost += self.calculate_g(final_state)
         return total_cost
 
     def is_well_formed(self, delta_o_dict):
@@ -571,8 +633,11 @@ class Environment(object):
         for obs_id, curr_pos in current_obs_positions.items():
             init_pos = self.obs_id_to_init_loc[obs_id]
             has_spot = False
-            for dx in range(-self.k, self.k + 1):
-                for dy in range(-(self.k - abs(dx)), self.k - abs(dx) + 1):
+            for dx in range(-self.well_formed_radius, self.well_formed_radius + 1):
+                for dy in range(
+                    -(self.well_formed_radius - abs(dx)),
+                    self.well_formed_radius - abs(dx) + 1,
+                ):
                     v_park = (init_pos[0] + dx, init_pos[1] + dy)
                     if v_park == curr_pos: continue
                     if not (0 <= v_park[0] < self.dimension[0] and 0 <= v_park[1] < self.dimension[1]): continue

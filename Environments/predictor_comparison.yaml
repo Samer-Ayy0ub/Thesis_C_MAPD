@@ -1,0 +1,41 @@
+agents:
+- name: agent0
+  start: [0, 2]
+
+map:
+  dimensions: [5, 5]
+  obstacles: []
+  movable_obstacles:
+  - [2, 2]
+  - [3, 3]
+  non_task_endpoints:
+  - [0, 2]
+  start_locations:
+  - [4, 2]
+  - [2, 0]
+  - [0, 0]
+  goal_locations:
+  - [2, 4]
+  - [4, 0]
+  - [0, 4]
+
+tasks:
+- task_name: task0
+  start_time: 1
+  start: [4, 2]
+  goal: [2, 4]
+- task_name: task1
+  start_time: 19
+  start: [2, 0]
+  goal: [4, 0]
+- task_name: task2
+  start_time: 37
+  start: [0, 0]
+  goal: [0, 4]
+
+delays:
+  agent0: []
+
+n_tasks: 3
+task_freq: 1.0
+n_delays_per_agent: 0

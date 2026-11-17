@@ -1,0 +1,413 @@
+{
+    "baselines": {
+        "LB": {
+            "makespan": 105.33333333333333,
+            "service_time": 43.04999999999999
+        },
+        "UB": {
+            "makespan": null,
+            "service_time": null
+        }
+    },
+    "Alpha": {
+        "values": [
+            0.1,
+            0.5,
+            1.0
+        ],
+        "base_settings": {
+            "alpha": 1.0,
+            "radius": 5,
+            "laziness": 4
+        },
+        "avg_service_time": [
+            35.8,
+            35.8,
+            35.8
+        ],
+        "std_service_time": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "avg_makespan": [
+            95.0,
+            95.0,
+            95.0
+        ],
+        "std_makespan": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "avg_sim_time": [
+            1.3679537773132324,
+            0.9423043727874756,
+            1.182335615158081
+        ],
+        "std_sim_time": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "avg_terraforming_cost": [
+            0.7000000000000001,
+            3.5,
+            7.0
+        ],
+        "std_terraforming_cost": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "raw_data": {
+            "0.1": {
+                "service_times": [
+                    35.8
+                ],
+                "makespans": [
+                    95
+                ],
+                "sim_times": [
+                    1.3679537773132324
+                ],
+                "terraforming_costs": [
+                    0.7000000000000001
+                ],
+                "failed_runs": 9,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 7: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "0.5": {
+                "service_times": [
+                    35.8
+                ],
+                "makespans": [
+                    95
+                ],
+                "sim_times": [
+                    0.9423043727874756
+                ],
+                "terraforming_costs": [
+                    3.5
+                ],
+                "failed_runs": 9,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 7: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "1.0": {
+                "service_times": [
+                    35.8
+                ],
+                "makespans": [
+                    95
+                ],
+                "sim_times": [
+                    1.182335615158081
+                ],
+                "terraforming_costs": [
+                    7.0
+                ],
+                "failed_runs": 9,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 7: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            }
+        }
+    },
+    "Radius": {
+        "values": [
+            3,
+            5,
+            7
+        ],
+        "base_settings": {
+            "alpha": 1.0,
+            "radius": 5,
+            "laziness": 4
+        },
+        "avg_service_time": [
+            35.8,
+            35.8,
+            35.8
+        ],
+        "std_service_time": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "avg_makespan": [
+            95.0,
+            95.0,
+            95.0
+        ],
+        "std_makespan": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "avg_sim_time": [
+            0.8486251831054688,
+            0.8205690383911133,
+            0.34911274909973145
+        ],
+        "std_sim_time": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "avg_terraforming_cost": [
+            7.0,
+            7.0,
+            7.0
+        ],
+        "std_terraforming_cost": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "raw_data": {
+            "3": {
+                "service_times": [
+                    35.8
+                ],
+                "makespans": [
+                    95
+                ],
+                "sim_times": [
+                    0.8486251831054688
+                ],
+                "terraforming_costs": [
+                    7.0
+                ],
+                "failed_runs": 9,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 7: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "5": {
+                "service_times": [
+                    35.8
+                ],
+                "makespans": [
+                    95
+                ],
+                "sim_times": [
+                    0.8205690383911133
+                ],
+                "terraforming_costs": [
+                    7.0
+                ],
+                "failed_runs": 9,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 7: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "7": {
+                "service_times": [
+                    35.8
+                ],
+                "makespans": [
+                    95
+                ],
+                "sim_times": [
+                    0.34911274909973145
+                ],
+                "terraforming_costs": [
+                    7.0
+                ],
+                "failed_runs": 9,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 7: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            }
+        }
+    },
+    "Laziness": {
+        "values": [
+            1,
+            2,
+            5
+        ],
+        "base_settings": {
+            "alpha": 1.0,
+            "radius": 5,
+            "laziness": 4
+        },
+        "avg_service_time": [
+            NaN,
+            45.662499999999994,
+            39.849999999999994
+        ],
+        "std_service_time": [
+            NaN,
+            3.07517784038582,
+            4.050000000000001
+        ],
+        "avg_makespan": [
+            NaN,
+            108.5,
+            104.0
+        ],
+        "std_makespan": [
+            NaN,
+            12.216791722870616,
+            9.0
+        ],
+        "avg_sim_time": [
+            NaN,
+            0.5867264270782471,
+            1.9713749885559082
+        ],
+        "std_sim_time": [
+            NaN,
+            0.5263495627386799,
+            0.20337176322937012
+        ],
+        "avg_terraforming_cost": [
+            NaN,
+            23.0,
+            9.0
+        ],
+        "std_terraforming_cost": [
+            NaN,
+            3.7416573867739413,
+            2.0
+        ],
+        "raw_data": {
+            "1": {
+                "service_times": [],
+                "makespans": [],
+                "sim_times": [],
+                "terraforming_costs": [],
+                "failed_runs": 10,
+                "warnings": [
+                    "Seed 10: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 2: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 7: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "2": {
+                "service_times": [
+                    44.25,
+                    48.3,
+                    48.8,
+                    41.3
+                ],
+                "makespans": [
+                    119,
+                    105,
+                    120,
+                    90
+                ],
+                "sim_times": [
+                    0.34091711044311523,
+                    0.3174421787261963,
+                    1.4933412075042725,
+                    0.1952052116394043
+                ],
+                "terraforming_costs": [
+                    25.0,
+                    23.0,
+                    27.0,
+                    17.0
+                ],
+                "failed_runs": 6,
+                "warnings": [
+                    "Seed 2: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!"
+                ]
+            },
+            "5": {
+                "service_times": [
+                    35.8,
+                    43.9
+                ],
+                "makespans": [
+                    95,
+                    113
+                ],
+                "sim_times": [
+                    1.768003225326538,
+                    2.1747467517852783
+                ],
+                "terraforming_costs": [
+                    7.0,
+                    11.0
+                ],
+                "failed_runs": 8,
+                "warnings": [
+                    "Seed 1: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 3: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 4: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 5: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 6: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 7: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 8: FATAL ERROR: PLANNING FAILED!",
+                    "Seed 9: FATAL ERROR: PLANNING FAILED!"
+                ]
+            }
+        }
+    }
+}

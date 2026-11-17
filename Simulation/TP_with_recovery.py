@@ -5,16 +5,24 @@ author: Giacomo Lodigiani (@Lodz97)
 from math import fabs
 import random
 from Simulation.CBS.cbs import CBS, Environment
+from Simulation.cell_value_predictors import frequency_predictor, manhattan_task_predictor, null_predictor
 from Simulation.markov_chains import MarkovChainsMaker
 from collections import defaultdict
 
+MAX_FAILED_DEADLOCK_RECOVERY_ATTEMPTS = 1000
+RECOVERY_RADIUS = 4
 
 class TokenPassingRecovery(object):
     def __init__(self, agents, dimesions, obstacles, non_task_endpoints, simulation, a_star_max_iter=4000, k=0,
-                 replan_every_k_delays=False, pd=None, p_max=1, p_iter=1, new_recovery=False, movable_obstacles=None, alpha=0.5, terraforming_radius=3, laziness=5):
+                 replan_every_k_delays=False, pd=None, p_max=1, p_iter=1, new_recovery=False, movable_obstacles=None, alpha=0.5, terraforming_radius=3, laziness=1, cell_value_predictor=None, gamma=0.0):
         self.agents = agents
         self.laziness = laziness
         self.dimensions = dimesions
+        self.cell_visit_counts = {
+            (x, y): 0
+            for x in range(dimesions[0])
+            for y in range(dimesions[1])
+        }
         self.obstacles = set(tuple(o) for o in obstacles)
         self.movable_obstacles = set(tuple(o) for o in (movable_obstacles or []))
         self.non_task_endpoints = non_task_endpoints
@@ -32,8 +40,10 @@ class TokenPassingRecovery(object):
         self.k = k
         self.p_max = p_max
         self.alpha = alpha
+        self.gamma = gamma
         self.movable_obstacles_list = movable_obstacles or []
         self.terraforming_radius = terraforming_radius
+        self.cell_value_predictor = cell_value_predictor or null_predictor
         if self.k != 0 and self.p_max != 1:
             print('Use of k and p robustness at same time not allowed.')
             exit(-1)
@@ -68,6 +78,7 @@ class TokenPassingRecovery(object):
             self.p_iter = 1
         self.new_recovery = new_recovery
         self.init_token()
+        self.update_cell_values()
         self.check_initial_well_formedness()
 
     def init_token(self):
@@ -99,6 +110,8 @@ class TokenPassingRecovery(object):
             self.token['path_ends'].add(tuple(a['start']))
         self.token['prob_exceeded'] = False
         self.token['deadlock_count_per_agent'] = defaultdict(lambda: 0)
+        self.token['deadlock_recovery_failures_per_agent'] = defaultdict(lambda: 0)
+        self.token['deadlock_recovery_last_pos_per_agent'] = {}
 
     def check_initial_well_formedness(self):
         if len(self.v_ep) <= 1:
@@ -351,6 +364,49 @@ class TokenPassingRecovery(object):
         elif tuple(agent_pos) in self.token['occupied_non_task_endpoints']:
             self.token['occupied_non_task_endpoints'].remove(tuple(agent_pos))
 
+    def record_path_visits(self, path):
+        visits_recorded = False
+        for previous, current in zip(path, path[1:]):
+            current_cell = tuple(current)
+            if current_cell != tuple(previous):
+                self.cell_visit_counts[current_cell] += 1
+                visits_recorded = True
+
+        self.update_cell_values()
+
+    def update_cell_values(self):
+        context = {
+            'dimensions': tuple(self.dimensions),
+            'unfinished_tasks': self.get_unassigned_tasks(),
+            'agents': self.agents,
+            'obstacles': frozenset(self.obstacles),
+            'movable_obstacles': tuple(self.movable_obstacles_list),
+            'simulation_time': self.simulation.get_time(),
+        }
+        predicted_values = self.cell_value_predictor(
+            dict(self.cell_visit_counts), context
+        )
+        missing_cells = self.cell_visit_counts.keys() - predicted_values.keys()
+        if missing_cells:
+            raise ValueError(
+                f'Cell-value predictor omitted grid cells: {sorted(missing_cells)}'
+            )
+        self.cell_values = {
+            cell: predicted_values[cell]
+            for cell in self.cell_visit_counts
+        }
+
+    def get_unassigned_tasks(self):
+        """Return revealed tasks that have not yet been assigned to an agent."""
+        return [
+            {
+                'task_name': task_name,
+                'start': start,
+                'goal': goal,
+            }
+            for task_name, (start, goal) in self.token.get('tasks', {}).items()
+        ]
+
     def get_agents_to_tasks_goals(self):
         goals = set()
         for el in self.token['agents_to_tasks'].values():
@@ -403,6 +459,8 @@ class TokenPassingRecovery(object):
                         moving_obstacles_agents[(dic['pos_max_conf'][0], dic['pos_max_conf'][1], -1)] = agent_name
                     else:
                         break
+        if path:
+            print(f"CBS intended plan for agent '{agent_name}': {path}")
         return path
 
     def go_to_closest_non_task_endpoint(self, agent_name, agent_pos, all_idle_agents, all_delayed_agents):
@@ -412,13 +470,14 @@ class TokenPassingRecovery(object):
         agent = {'name': agent_name, 'start': agent_pos, 'goal': closest_non_task_endpoint}
         env = Environment(self.dimensions, [agent], self.obstacles | idle_obstacles_agents, moving_obstacles_agents, movable_obstacles=self.get_current_movable_obstacles(), original_obs_pos=self.token['original_obs_pos'], v_ep=self.v_ep,
                   a_star_max_iter=self.a_star_max_iter, alpha=self.alpha, 
-                  terraforming_radius=0,
-                  static_obstacles=self.obstacles, laziness=self.laziness)
+                  terraforming_radius=0, 
+            static_obstacles=self.obstacles, laziness=self.laziness, cell_values=self.cell_values,
+            goal_must_remain_safe=True, gamma=self.gamma)
         cbs = CBS(env)
         result = self.search(cbs, agent_name, moving_obstacles_agents)
         if not result:
             print("Solution to non-task endpoint not found for agent", agent_name, " instance is not well-formed.")
-            self.deadlock_recovery(agent_name, agent_pos, all_idle_agents, all_delayed_agents, 4)
+            self.deadlock_recovery(agent_name, agent_pos, all_idle_agents, all_delayed_agents, RECOVERY_RADIUS)
             # exit(1)
         else:
             path_to_non_task_endpoint = result['agents']
@@ -439,6 +498,7 @@ class TokenPassingRecovery(object):
             self.token['agents'][agent_name] = []
             for el in path_to_non_task_endpoint[agent_name]:
                 self.token['agents'][agent_name].append([el['x'], el['y']])
+            self.record_path_visits(self.token['agents'][agent_name])
 
     def get_random_close_cell(self, agent_pos, r):
         while True:
@@ -450,6 +510,12 @@ class TokenPassingRecovery(object):
                 return cell
 
     def deadlock_recovery(self, agent_name, agent_pos, all_idle_agents, all_delayed_agents, r):
+        current_pos = tuple(agent_pos)
+        last_pos = self.token['deadlock_recovery_last_pos_per_agent'].get(agent_name)
+        if last_pos is not None and current_pos != last_pos:
+            self.token['deadlock_recovery_failures_per_agent'][agent_name] = 0
+        self.token['deadlock_recovery_last_pos_per_agent'][agent_name] = current_pos
+
         self.token['deadlock_count_per_agent'][agent_name] += 1
         if self.token['deadlock_count_per_agent'][agent_name] >= 5:
             self.token['deadlock_count_per_agent'][agent_name] = 0
@@ -460,12 +526,28 @@ class TokenPassingRecovery(object):
             env = Environment(self.dimensions, [agent], self.obstacles | idle_obstacles_agents, moving_obstacles_agents, movable_obstacles=self.get_current_movable_obstacles(), original_obs_pos=self.token['original_obs_pos'], v_ep=self.v_ep,
                   a_star_max_iter=self.a_star_max_iter, alpha=self.alpha, 
                   terraforming_radius=0, 
-                  static_obstacles=self.obstacles, laziness=self.laziness)
+                  well_formed_radius=self.terraforming_radius,
+                                static_obstacles=self.obstacles, laziness=self.laziness, cell_values=self.cell_values,
+                                goal_must_remain_safe=True, gamma=self.gamma)
             cbs = CBS(env)
             result = self.search(cbs, agent_name, moving_obstacles_agents)
             if not result:
-                print("No solution to deadlock recovery for agent", agent_name, " retrying later.")
+                self.token['deadlock_recovery_failures_per_agent'][agent_name] += 1
+                failures = self.token['deadlock_recovery_failures_per_agent'][agent_name]
+                if failures >= MAX_FAILED_DEADLOCK_RECOVERY_ATTEMPTS:
+                    task = self.token['agents_to_tasks'].get(agent_name)
+                    goal = task.get('goal') if task else None
+                    message = (
+                        f"FATAL ERROR: Deadlock recovery failed {failures} consecutive times for "
+                        f"agent '{agent_name}' at simulation time {self.simulation.get_time()}, "
+                        f"position {current_pos}, task goal {goal}. Stopping simulation."
+                    )
+                    print(message)
+                    raise SystemExit(message)
+                print("No solution to deadlock recovery for agent", agent_name,
+                      f"({failures}/{MAX_FAILED_DEADLOCK_RECOVERY_ATTEMPTS} failed attempts); retrying later.")
             else:
+                self.token['deadlock_recovery_failures_per_agent'][agent_name] = 0
                 path_to_non_task_endpoint = result['agents']
                 obs_trajectories = result['obstacles']
                 base_time = self.simulation.get_time() - 1
@@ -482,6 +564,7 @@ class TokenPassingRecovery(object):
                 self.token['agents'][agent_name] = []
                 for el in path_to_non_task_endpoint[agent_name]:
                     self.token['agents'][agent_name].append([el['x'], el['y']])
+                self.record_path_visits(self.token['agents'][agent_name])
 
     def time_forward(self):
         # Update completed tasks
@@ -495,11 +578,15 @@ class TokenPassingRecovery(object):
                 self.token['completed_tasks_times'][
                     self.token['agents_to_tasks'][agent_name]['task_name']] = self.simulation.get_time()
                 self.token['agents_to_tasks'].pop(agent_name)
+                self.token['deadlock_recovery_failures_per_agent'][agent_name] = 0
+
             if agent_name in self.token['agents_to_tasks'] and (pos['x'], pos['y']) == tuple(
                     self.token['agents_to_tasks'][agent_name]['goal']) \
                     and len(self.token['agents'][agent_name]) == 1 and self.token['agents_to_tasks'][agent_name][
                 'task_name'] == 'safe_idle':
                 self.token['agents_to_tasks'].pop(agent_name)
+
+        self.update_cell_values()
 
         # Check delayed agents and agents affected by delays
         if self.new_recovery:
@@ -581,6 +668,7 @@ class TokenPassingRecovery(object):
         for t in self.simulation.get_new_tasks():
             self.token['tasks'][t['task_name']] = [t['start'], t['goal']]
             self.token['start_tasks_times'][t['task_name']] = self.simulation.get_time()
+        self.update_cell_values()
         idle_agents = self.get_idle_agents()
         while len(idle_agents) > 0:
             agent_name = random.choice(list(idle_agents.keys()))
@@ -614,27 +702,26 @@ class TokenPassingRecovery(object):
                 idle_obstacles_agents = self.get_idle_obstacles_agents(all_idle_agents.values(), all_delayed_agents, 0)
                 agent = {'name': agent_name, 'start': agent_pos, 'goal': closest_task[0]}
                 env = Environment(self.dimensions, [agent], self.obstacles | idle_obstacles_agents,
-                                  moving_obstacles_agents, movable_obstacles=self.get_current_movable_obstacles(), original_obs_pos=self.token['original_obs_pos'], v_ep=self.v_ep, a_star_max_iter=self.a_star_max_iter, alpha=self.alpha, terraforming_radius=self.terraforming_radius, static_obstacles=self.obstacles, laziness=self.laziness)
+                                  moving_obstacles_agents, movable_obstacles=self.get_current_movable_obstacles(), original_obs_pos=self.token['original_obs_pos'], v_ep=self.v_ep, a_star_max_iter=self.a_star_max_iter, alpha=self.alpha, terraforming_radius=self.terraforming_radius, static_obstacles=self.obstacles, laziness=self.laziness, cell_values=self.cell_values, gamma=self.gamma)
                 cbs = CBS(env)
-                # result_start = self.search(cbs, agent_name, moving_obstacles_agents)
-                # if not result_start:
-                #     print("Solution not found to task start for agent", agent_name, " idling at current position...")
-                #     if len(self.token['delayed_agents']) == 0 and not self.token['prob_exceeded']:
-                #         print('Instance is not well-formed or a_star_max_iter is too low for this environment.')
-                #         self.deadlock_recovery(agent_name, agent_pos, all_idle_agents, all_delayed_agents, 4)
-                #         # exit(1)
-                # else:
                 result_start = self.search(cbs, agent_name, moving_obstacles_agents)
                 if not result_start:
-                    import sys
-                    print("\n" + "!"*70)
-                    print("FATAL ERROR: PLANNING FAILED!")
-                    print(f"Agent '{agent_name}' could not find a path to TASK START {closest_task[0]}.")
-                    print(f"Current Agent Pos: {agent_pos}")
-                    print(f"Possible causes: 'laziness' parameter too low, 'a_star_max_iter' exceeded, or dynamic topological deadlock.")
-                    print("Halting simulation as requested.")
-                    print("!"*70 + "\n")
-                    sys.exit(1)
+                    print("Solution not found to task start for agent", agent_name, " idling at current position...")
+                    print("delayed agents:", self.token['delayed_agents'])
+                    if len(self.token['delayed_agents']) == 0 and not self.token['prob_exceeded']:
+                        print('Instance is not well-formed or a_star_max_iter is too low for this environment.')
+                        self.deadlock_recovery(agent_name, agent_pos, all_idle_agents, all_delayed_agents, RECOVERY_RADIUS)
+                        # exit(1)
+                    #else:
+                    #   import sys
+                    #    print("\n" + "!"*70)
+                    #    print("FATAL ERROR: PLANNING FAILED!")
+                    #    print(f"Agent '{agent_name}' could not find a path to TASK START {closest_task[0]}.")
+                    #    print(f"Current Agent Pos: {agent_pos}")
+                    #    print(f"Possible causes: 'laziness' parameter too low, 'a_star_max_iter' exceeded, or dynamic topological deadlock.")
+                    #    print("Halting simulation as requested.")
+                    #    print("!"*70 + "\n")
+                    #    sys.exit(1)
                 else:
                     path_to_task_start = result_start['agents']
                     start_obs_trajectories = result_start['obstacles']
@@ -664,19 +751,25 @@ class TokenPassingRecovery(object):
                             updated_obs_pos[obs_id] = rel_path
                     agent = {'name': agent_name, 'start': closest_task[0], 'goal': closest_task[1]}
                     env = Environment(self.dimensions, [agent], self.obstacles | idle_obstacles_agents,
-                                      moving_obstacles_agents, movable_obstacles=updated_obs_pos, original_obs_pos=self.token['original_obs_pos'], v_ep=self.v_ep, a_star_max_iter=self.a_star_max_iter, alpha=self.alpha, terraforming_radius=self.terraforming_radius, static_obstacles=self.obstacles, laziness=self.laziness)
+                                      moving_obstacles_agents, movable_obstacles=updated_obs_pos, original_obs_pos=self.token['original_obs_pos'], v_ep=self.v_ep, a_star_max_iter=self.a_star_max_iter, alpha=self.alpha, terraforming_radius=self.terraforming_radius, static_obstacles=self.obstacles, laziness=self.laziness, cell_values=self.cell_values, gamma=self.gamma)
                     cbs = CBS(env)
                     result_goal = self.search(cbs, agent_name, moving_obstacles_agents)
                     if not result_goal:
-                        import sys
-                        print("\n" + "!"*70)
-                        print("FATAL ERROR: PLANNING FAILED!")
-                        print(f"Agent '{agent_name}' could not find a path to TASK GOAL {closest_task[1]}.")
-                        print(f"Current Agent Pos: {closest_task[0]} (Task Start)")
-                        print(f"Possible causes: 'laziness' parameter too low, 'a_star_max_iter' exceeded, or dynamic topological deadlock.")
-                        print("Halting simulation as requested.")
-                        print("!"*70 + "\n")
-                        sys.exit(1)
+                        print("Solution not found to task goal for agent", agent_name, " idling at current position...")
+                        print("delayed agents:", self.token['delayed_agents'])
+                        if len(self.token['delayed_agents']) == 0 and not self.token['prob_exceeded']:
+                            print('Instance is not well-formed or a_star_max_iter is too low for this environment.')
+                            self.deadlock_recovery(agent_name, agent_pos, all_idle_agents, all_delayed_agents, RECOVERY_RADIUS)
+                        #else:
+                        #    import sys
+                        #   print("\n" + "!"*70)
+                        #    print("FATAL ERROR: PLANNING FAILED!")
+                        #    print(f"Agent '{agent_name}' could not find a path to TASK GOAL {closest_task[1]}.")
+                        #    print(f"Current Agent Pos: {closest_task[0]} (Task Start)")
+                        #    print(f"Possible causes: 'laziness' parameter too low, 'a_star_max_iter' exceeded, or dynamic topological deadlock.")
+                        #    print("Halting simulation as requested.")
+                        #    print("!"*70 + "\n")
+                        #    sys.exit(1)
                     else:
                         print("Solution found to task goal for agent", agent_name, " doing task...")
                         path_to_task_goal = result_goal['agents']
@@ -719,10 +812,13 @@ class TokenPassingRecovery(object):
                         self.token['agents'][agent_name] = self.token['agents'][agent_name][:-1]
                         for el in path_to_task_goal[agent_name]:
                             self.token['agents'][agent_name].append([el['x'], el['y']])
+                        self.record_path_visits(self.token['agents'][agent_name])
             elif self.check_safe_idle(agent_pos):
                 print('No available tasks for agent', agent_name, ' idling at current position...')
             else:
                 self.go_to_closest_non_task_endpoint(agent_name, agent_pos, all_idle_agents, all_delayed_agents)
+
+        self.check_plan_conflicts()
 
         # Advance along paths in the token
         if not self.new_recovery:
@@ -730,6 +826,40 @@ class TokenPassingRecovery(object):
                 if len(path) > 1:
                     self.token['agents'][name] = path[1:]
     
+    def check_plan_conflicts(self):
+        now = self.simulation.get_time()
+        paths = {
+            name: [tuple(cell) for cell in path]
+            for name, path in self.token['agents'].items()
+            if path
+        }
+        names = list(paths)
+
+        def at(path, time):
+            return path[min(time, len(path) - 1)]
+
+        for i in range(len(names)):
+            for j in range(i + 1, len(names)):
+                agent_a, agent_b = names[i], names[j]
+                path_a, path_b = paths[agent_a], paths[agent_b]
+                for time in range(max(len(path_a), len(path_b))):
+                    if at(path_a, time) == at(path_b, time):
+                        print(
+                            f"[PLAN CONFLICT] time {now}: vertex "
+                            f"{agent_a}-{agent_b} at +{time} in {at(path_a, time)}"
+                        )
+                        break
+                    if (
+                        at(path_a, time) == at(path_b, time + 1)
+                        and at(path_a, time + 1) == at(path_b, time)
+                    ):
+                        print(
+                            f"[PLAN CONFLICT] time {now}: swap "
+                            f"{agent_a}-{agent_b} at +{time} between "
+                            f"{at(path_a, time)} and {at(path_a, time + 1)}"
+                        )
+                        break
+
     def shift_obstacle_trajectories(self, agent_name, current_time):
         for obs_id, path in self.token['obstacles_paths'].items():
             shifted = False

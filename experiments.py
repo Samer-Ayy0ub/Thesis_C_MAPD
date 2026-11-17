@@ -31,9 +31,9 @@ SCENARIOS = {
 }
 
 SWEEP_VALUES = {
-    "Alpha": [0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 10, 20, 100],
-    "Radius": [1, 2, 3, 4, 5, 6],
-    "Laziness": [1, 2, 3, 4, 5]
+    "Alpha": [0.1, 0.5, 1],
+    "Radius": [3,5,7],
+    "Laziness": [5]
 }
 
 class LogCatcher:
